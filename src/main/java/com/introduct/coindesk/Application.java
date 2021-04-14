@@ -10,7 +10,7 @@ import java.util.Scanner;
 public class Application {
 
   public static void main(String[] args) {
-    log.info("Please enter currency code: ");
+    System.out.print("Please enter currency code: ");
     Scanner in = new Scanner(System.in);
 
     // parse input
@@ -19,6 +19,10 @@ public class Application {
 
     // process output
     CurrencyRateStats stats = new CoindeskServiceFacade().getStats(currency);
-    log.info("Processed currency stats: {}", stats);
+    log.info("Processed currency stats: " + stats);
+
+    System.out.println("The current Bitcoin rate is " + stats.getRate());
+    System.out.println("The lowest Bitcoin rate in the last 30 days is " + stats.getMin());
+    System.out.println("The highest Bitcoin rate in the last 30 days is " + stats.getMax());
   }
 }

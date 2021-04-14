@@ -15,9 +15,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Currency;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoindeskServiceIT {
   // a subject to test
@@ -34,9 +35,9 @@ public class CoindeskServiceIT {
 
   @ParameterizedTest
   @ValueSource(strings = {"USD", "EUR"})
-  void getCurrentRate(String currency) {
+  void getCurrentRate(String currencyCode) {
     // - act -
-    var price = service.getCurrentRate(Currency.getInstance(currency));
+    var price = service.getCurrentRate(currencyCode);
 
     // - assert -
     assertNotNull(price);
@@ -45,13 +46,13 @@ public class CoindeskServiceIT {
 
   @ParameterizedTest
   @ValueSource(strings = {"USD", "EUR"})
-  void getHistory(String currency) {
+  void getHistory(String currencyCode) {
     // - arrange -
     var start = LocalDate.now().minusMonths(1);
     var end = LocalDate.now();
 
     // - act -
-    var history = service.getCurrencyHistory(Currency.getInstance(currency), start, end);
+    var history = service.getCurrencyHistory(currencyCode, start, end);
 
     // - assert -
     assertNotNull(history);
@@ -71,7 +72,7 @@ public class CoindeskServiceIT {
         CoindeskServiceException.class,
         () ->
             service.getCurrencyHistory(
-                Currency.getInstance("USD"),
+                "USD",
                 LocalDate.now().plusYears(1),
                 LocalDate.now().plusYears(2)));
   }
@@ -82,7 +83,7 @@ public class CoindeskServiceIT {
         CoindeskServiceException.class,
         () ->
             service.getCurrencyHistory(
-                Currency.getInstance("USD"),
+                "USD",
                 LocalDate.now().minusYears(101),
                 LocalDate.now().minusYears(100)));
   }
@@ -93,7 +94,7 @@ public class CoindeskServiceIT {
         CoindeskServiceException.class,
         () ->
             service.getCurrencyHistory(
-                Currency.getInstance("USD"),
+                "USD",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().minusDays(1)));
   }

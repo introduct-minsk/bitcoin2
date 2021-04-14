@@ -8,13 +8,18 @@ import com.introduct.coindesk.model.History;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.net.URIBuilder;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
-import java.util.Currency;
 import java.util.Map;
 
 @Slf4j
@@ -32,46 +37,44 @@ public class CoindeskServiceImpl implements CoindeskService {
   }
 
   @Override
-  public BigDecimal getCurrentRate(Currency currency) throws CoindeskServiceException {
+  public BigDecimal getCurrentRate(String currencyCode) {
     try {
-      var uri = new URI(coinBaseUrl + "/currentprice/" + currency.getCurrencyCode() + ".json");
+      var uri = new URI(coinBaseUrl + "/currentprice/" + currencyCode + ".json");
 
       log.debug("Sending 'current price' request to {}", uri);
       var currentRate = getApiResponse(uri, CurrentRate.class);
 
-      log.debug("Received result for currency {}: {}", currency, currentRate);
-      return currentRate.getBpi().get(currency.getCurrencyCode()).getRate();
-
-    } catch (Exception e) {
-      log.error("Unexpected error", e);
-      throw new CoindeskServiceException("Unexpected error", e);
+      log.debug("Received result for currency {}: {}", currencyCode, currentRate);
+      return currentRate.getBpi().get(currencyCode).getRate();
+    } catch (URISyntaxException e) {
+      log.error("Unexpected error during processing request.", e);
+      throw new CoindeskServiceException("Unexpected error during processing request.", e);
     }
   }
 
   @Override
   public Map<LocalDate, BigDecimal> getCurrencyHistory(
-      Currency currency, LocalDate start, LocalDate end) throws CoindeskServiceException {
-    // do validation
-    if (start.isAfter(end)) throw new CoindeskServiceException("Start date is after end date");
-
+          String currencyCode, LocalDate start, LocalDate end) {
     try {
+      // do validation
+      if (start.isAfter(end)) throw new CoindeskServiceException("Start date is after end date");
+
       var uri =
           new URIBuilder(coinBaseUrl + "/historical/close.json")
               .addParameter("start", start.toString())
               .addParameter("end", end.toString())
-              .addParameter("currency", currency.getCurrencyCode())
+              .addParameter("currency", currencyCode)
               .build();
 
       log.debug("Sending 'historical' request to {}", uri);
       var history = getApiResponse(uri, History.class);
 
       log.debug(
-          "Received result for currency {}, start {}, end {}: {}", currency, start, end, history);
+          "Received result for currency {}, start {}, end {}: {}", currencyCode, start, end, history);
       return history.getBpi();
-
-    } catch (Exception e) {
-      log.error("Unexpected error", e);
-      throw new CoindeskServiceException("Unexpected error", e);
+    } catch (URISyntaxException e) {
+      log.error("Unexpected error during processing request.", e);
+      throw new CoindeskServiceException("Unexpected error during processing request.", e);
     }
   }
 
@@ -101,19 +104,42 @@ public class CoindeskServiceImpl implements CoindeskService {
    * }
    * </pre>
    */
-  private <T> T getApiResponse(URI uri, Class<T> responseType) throws IOException {
+  private <T> T getApiResponse(URI uri, Class<T> responseType){
     var request = new HttpGet(uri);
 
-    try (var response = httpClient.execute(request)) {
-      log.debug("Received response: {}", response);
+    try (final CloseableHttpResponse response = httpClient.execute(request)) {
+      log.info("Received response: {} with http code: {}", response, response.getCode());
 
-      if (response.getCode() == 404)
-        throw new CoindeskServiceException(response.getEntity().getContent().toString());
+      if (response.getCode() == HttpStatus.SC_NOT_FOUND) {
+        throw new CoindeskServiceException(getMessageFromResponse(response));
+      }
 
       if (response.getEntity() != null) {
-        return mapper.readValue(response.getEntity().getContent(), responseType);
+         return mapper.readValue(response.getEntity().getContent(), responseType);
+      } else {
+        throw new CoindeskServiceException("Invalid response from the server.");
       }
-      throw new CoindeskServiceException("Unexpected state");
+    } catch (IOException e) {
+      log.error("Unexpected error during processing request.", e);
+      throw new CoindeskServiceException("Unexpected error during processing request.", e);
+    }
+  }
+
+  private String getMessageFromResponse(ClassicHttpResponse response) {
+    try (InputStreamReader inputStreamReader = new InputStreamReader(response.getEntity().getContent());
+         BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+      StringBuilder sb = new StringBuilder();
+
+      String str;
+
+      while((str = bufferedReader.readLine())!= null){
+        sb.append(str);
+      }
+
+      return sb.toString();
+    } catch (IOException e) {
+      log.error("Unexpected error during reading response.", e);
+      throw new CoindeskServiceException("Unexpected error during reading response.", e);
     }
   }
 }

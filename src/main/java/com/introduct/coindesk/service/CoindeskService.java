@@ -4,7 +4,6 @@ import com.introduct.coindesk.exception.CoindeskServiceException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Currency;
 import java.util.Map;
 
 /**
@@ -12,8 +11,8 @@ import java.util.Map;
  */
 public interface CoindeskService {
 
-  BigDecimal getCurrentRate(Currency currency) throws CoindeskServiceException;
+  BigDecimal getCurrentRate(String currencyCode) throws CoindeskServiceException;
 
-  Map<LocalDate, BigDecimal> getCurrencyHistory(Currency currency, LocalDate start, LocalDate end)
+  Map<LocalDate, BigDecimal> getCurrencyHistory(String currencyCode, LocalDate start, LocalDate end)
       throws CoindeskServiceException;
 }

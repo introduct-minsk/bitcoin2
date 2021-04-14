@@ -54,17 +54,15 @@ public class CoindeskServiceFacade {
    *   - max=63564.8333
    * </pre>
    */
-  public CurrencyRateStats getStats(String currency) {
-    var parsedCurrency = Currency.getInstance(currency);
-
+  public CurrencyRateStats getStats(String currencyCode) {
     // 1.) request current rate
-    var currentPrice = service.getCurrentRate(parsedCurrency);
+    var currentPrice = service.getCurrentRate(currencyCode.toUpperCase());
 
     // 2.) request historical data
     var history =
-        service.getCurrencyHistory(parsedCurrency, LocalDate.now().minusDays(30), LocalDate.now());
+        service.getCurrencyHistory(currencyCode.toUpperCase(), LocalDate.now().minusDays(30), LocalDate.now());
 
     // accumulate results
-    return CurrencyRateStats.process(parsedCurrency, currentPrice, history);
+    return CurrencyRateStats.process(Currency.getInstance(currencyCode.toUpperCase()), currentPrice, history);
   }
 }

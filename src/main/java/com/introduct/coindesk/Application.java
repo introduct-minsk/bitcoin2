@@ -1,5 +1,6 @@
 package com.introduct.coindesk;
 
+import com.introduct.coindesk.exception.CoindeskServiceException;
 import com.introduct.coindesk.model.CurrencyRateStats;
 import com.introduct.coindesk.service.CoindeskServiceFacade;
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +19,16 @@ public class Application {
     log.info("Parsed currency code: {}", currency);
 
     // process output
-    CurrencyRateStats stats = new CoindeskServiceFacade().getStats(currency);
-    log.info("Processed currency stats: " + stats);
+    try {
+      CurrencyRateStats stats = new CoindeskServiceFacade().getStats(currency);
+      log.info("Processed currency stats: " + stats);
 
-    System.out.println("The current Bitcoin rate is " + stats.getRate());
-    System.out.println("The lowest Bitcoin rate in the last 30 days is " + stats.getMin());
-    System.out.println("The highest Bitcoin rate in the last 30 days is " + stats.getMax());
+      System.out.println("The current Bitcoin rate is " + stats.getRate());
+      System.out.println("The lowest Bitcoin rate in the last 30 days is " + stats.getMin());
+      System.out.println("The highest Bitcoin rate in the last 30 days is " + stats.getMax());
+    } catch (CoindeskServiceException e) {
+      System.out.println(e.getMessage());
+      log.error(e.getMessage(), e);
+    }
   }
 }

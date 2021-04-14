@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'io.freefair.lombok' version '6.0.0-m2'
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id "com.github.ben-manes.versions" version '0.38.0'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.introduct.coindesk.Application'
+    }
+}
+
+shadowJar {
+    minimize()
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-jdk14:1.7.30'
+    implementation group: 'com.typesafe', name: 'config', version: '1.4.1'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+
+    testImplementation group: 'com.squareup.okhttp3', name: 'mockwebserver', version: '4.9.1'
+}
+
+test {
+    useJUnitPlatform()
+}
